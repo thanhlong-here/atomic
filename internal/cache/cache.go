@@ -2,74 +2,110 @@ package cache
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
+	"strings"
 
-	"github.com/allegro/bigcache"
+	"github.com/allegro/bigcache/v3"
 )
 
-var instance *bigcache.BigCache
+var client *bigcache.BigCache
 
-func InitWithConfig(cfg CacheConfig) {
+func Init() {
+	cfg := DefaultConfig()
 	config := bigcache.Config{
 		Shards:             cfg.Shards,
-		LifeWindow:         cfg.TTL,
-		CleanWindow:        cfg.CleanInterval,
-		MaxEntriesInWindow: cfg.EstimatedEntries,
+		LifeWindow:         cfg.LifeWindow,
+		CleanWindow:        cfg.CleanWindow,
 		MaxEntrySize:       cfg.MaxEntrySize,
-		HardMaxCacheSize:   cfg.MaxRAMMB,
-		Verbose:            false,
+		Verbose:            cfg.Verbose,
+		HardMaxCacheSize:   cfg.HardMaxCacheSizeMB,
+		OnRemove:           nil,
+		OnRemoveWithReason: nil,
 	}
-
-	cache, err := bigcache.NewBigCache(config)
+	var err error
+	client, err = bigcache.NewBigCache(config)
 	if err != nil {
-		panic(fmt.Sprintf("Cache init failed: %v", err))
+		log.Fatal("❌ Failed to init BigCache:", err)
 	}
-
-	instance = cache
 }
 
-// Dùng config mặc định
-func Init() {
-	InitWithConfig(DefaultCacheConfig())
-}
-
-// ===== Helper =====
-
-func key(model, id string) string {
-	return fmt.Sprintf("%s:%s", model, id)
-}
+// -------------------- Model-level cache --------------------
 
 func Set(model, id string, data map[string]interface{}) {
-	bytes, _ := json.Marshal(data)
-	_ = instance.Set(key(model, id), bytes)
+	key := model + ":" + id
+	b, _ := json.Marshal(data)
+	client.Set(key, b)
 }
 
 func Get(model, id string) (map[string]interface{}, bool) {
-	data, err := instance.Get(key(model, id))
+	key := model + ":" + id
+	b, err := client.Get(key)
 	if err != nil {
 		return nil, false
 	}
-	var result map[string]interface{}
-	_ = json.Unmarshal(data, &result)
-	return result, true
+	var out map[string]interface{}
+	_ = json.Unmarshal(b, &out)
+	return out, true
 }
 
 func Delete(model, id string) {
-	_ = instance.Delete(key(model, id))
+	key := model + ":" + id
+	client.Delete(key)
 }
 
-// Raw key — dùng cho view
-func SetRaw(key string, value map[string]interface{}) {
-	bytes, _ := json.Marshal(value)
-	_ = instance.Set(key, bytes)
+// -------------------- Raw API (dùng cho view/tracking) --------------------
+
+func SetRaw(key string, data map[string]interface{}) {
+	b, _ := json.Marshal(data)
+	client.Set(key, b)
 }
 
 func GetRaw(key string) (map[string]interface{}, bool) {
-	data, err := instance.Get(key)
+	b, err := client.Get(key)
 	if err != nil {
 		return nil, false
 	}
-	var result map[string]interface{}
-	_ = json.Unmarshal(data, &result)
-	return result, true
+	var out map[string]interface{}
+	_ = json.Unmarshal(b, &out)
+	return out, true
+}
+
+func SetRawString(key string, val string) {
+	client.Set(key, []byte(val))
+}
+
+func GetRawString(key string) (string, bool) {
+	b, err := client.Get(key)
+	if err != nil {
+		return "", false
+	}
+	return string(b), true
+}
+
+// -------------------- Tooling --------------------
+
+// Liệt kê các key theo prefix (dành cho tracking, flush)
+func KeysPrefix(prefix string) []string {
+	var keys []string
+	iterator := client.Iterator()
+
+	for iterator.SetNext() {
+		entry, err := iterator.Value()
+		if err == nil && strings.HasPrefix(entry.Key(), prefix) {
+			keys = append(keys, entry.Key())
+		}
+	}
+	return keys
+}
+
+// Flush toàn bộ key theo prefix (vd: model posts → xóa hết posts:*)
+func FlushModelCache(model string) {
+	prefix := model + ":"
+	iterator := client.Iterator()
+	for iterator.SetNext() {
+		entry, err := iterator.Value()
+		if err == nil && strings.HasPrefix(entry.Key(), prefix) {
+			client.Delete(entry.Key())
+		}
+	}
 }

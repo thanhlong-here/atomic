@@ -4,6 +4,7 @@ import (
 	"atomic/internal/cache"
 	"atomic/internal/mongo"
 	"atomic/internal/queue"
+	"atomic/internal/tracking"
 	"atomic/internal/view"
 	"encoding/json"
 	"net/http"
@@ -27,7 +28,7 @@ func CreateDynamic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to insert", http.StatusInternalServerError)
 		return
 	}
-	view.TriggerSync(model)
+	tracking.MarkModelUpdated(model)
 	// Gắn _id vào phản hồi cho client
 	data["_id"] = insertedID
 	w.WriteHeader(http.StatusCreated)
@@ -72,7 +73,7 @@ func UpdateDynamic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	view.TriggerSync(model)
+	tracking.MarkModelUpdated(model)
 	// Trả lại object mới đã cập nhật
 	update["id"] = id
 	json.NewEncoder(w).Encode(update)
@@ -88,7 +89,7 @@ func DeleteDynamic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	view.TriggerSync(model)
+	tracking.MarkModelUpdated(model)
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -3,6 +3,7 @@ package main
 import (
 	"atomic/internal/cache"
 	"atomic/internal/handler"
+	"atomic/internal/middleware"
 	"atomic/internal/mongo"
 	"atomic/internal/queue"
 	"atomic/internal/view"
@@ -17,25 +18,14 @@ import (
 
 func handleView(w http.ResponseWriter, r *http.Request) {
 	viewName := mux.Vars(r)["view"]
-	cacheKey := "view:" + viewName + r.URL.RawQuery
 
-	// Check cache trước
-	if doc, found := view.GetCache(cacheKey); found {
-		json.NewEncoder(w).Encode(doc)
-		return
-	}
-
-	// Nếu không có cache → build lại
-	result, shouldCache, err := view.RebuildView(viewName, r)
+	result, _, err := view.RebuildView(viewName, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Trả kết quả
-	if shouldCache {
-		view.SetCache(cacheKey, result)
-	}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
 
@@ -45,11 +35,15 @@ func main() {
 	queue.Init() // ✅ Khởi động queue xử lý ghi DB
 
 	r := mux.NewRouter()
-	//Router DB
-	r.HandleFunc("/db/{model}/create", handler.CreateDynamic).Methods("POST")
-	r.HandleFunc("/db/{model}/{id}", handler.GetDynamic).Methods("GET")
-	r.HandleFunc("/db/{model}/{id}", handler.UpdateDynamic).Methods("PUT")
-	r.HandleFunc("/db/{model}/{id}", handler.DeleteDynamic).Methods("DELETE")
+	//Router DB Dynamic
+	api := r.PathPrefix("/db").Subrouter()
+	api.Use(middleware.ModelDyanmic)
+
+	api.HandleFunc("/{model}/create", handler.CreateDynamic).Methods("POST")
+	api.HandleFunc("/{model}/{id}", handler.GetDynamic).Methods("GET")
+	api.HandleFunc("/{model}/{id}", handler.UpdateDynamic).Methods("PUT")
+	api.HandleFunc("/{model}/{id}", handler.DeleteDynamic).Methods("DELETE")
+
 	//Router View
 	r.HandleFunc("/view/{view}", handleView).Methods("GET")
 

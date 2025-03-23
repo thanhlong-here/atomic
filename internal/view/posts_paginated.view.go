@@ -37,7 +37,7 @@ func (v postsPaginatedView) Rebuild(r *http.Request) (map[string]interface{}, bo
 
 	opts := options.Find().SetSkip(int64(skip)).SetLimit(int64(limit)).SetSort(bson.M{"created_at": -1})
 
-	cursor, err := mongo.Collection("posts").Find(context.TODO(), bson.M{}, opts)
+	cursor, err := mongo.Collection("dynamic_posts").Find(context.TODO(), bson.M{}, opts)
 	if err != nil {
 		return nil, false, err
 	}
@@ -60,5 +60,5 @@ func (v postsPaginatedView) Rebuild(r *http.Request) (map[string]interface{}, bo
 var dview DynamicView = postsPaginatedView{}
 
 func init() {
-	Register(dview)
+	RegisterView("posts_paginated", dview)
 }

@@ -3,22 +3,21 @@ package cache
 import "time"
 
 type CacheConfig struct {
-	TTL              time.Duration
-	CleanInterval    time.Duration
-	MaxRAMMB         int
-	Shards           int
-	MaxEntrySize     int
-	EstimatedEntries int
+	Shards             int
+	LifeWindow         time.Duration
+	CleanWindow        time.Duration
+	MaxEntrySize       int
+	HardMaxCacheSizeMB int
+	Verbose            bool
 }
 
-// DefaultCacheConfig: dùng cho dev hoặc EC2 free tier
-func DefaultCacheConfig() CacheConfig {
+func DefaultConfig() CacheConfig {
 	return CacheConfig{
-		TTL:              10 * time.Minute,
-		CleanInterval:    5 * time.Minute,
-		MaxRAMMB:         32,
-		Shards:           16,
-		MaxEntrySize:     512,
-		EstimatedEntries: 2000,
+		Shards:             1024,
+		LifeWindow:         10 * time.Minute,
+		CleanWindow:        5 * time.Minute,
+		MaxEntrySize:       1024,
+		HardMaxCacheSizeMB: 64,
+		Verbose:            false,
 	}
 }
