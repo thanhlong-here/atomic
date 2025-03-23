@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  atomic:
+    volumes:
+      - .:/app          # mount mã nguồn vào WORKDIR /app
+    command: go run cmd/api/main.go
