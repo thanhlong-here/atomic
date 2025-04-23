@@ -5,7 +5,7 @@ import (
 	"atomic/internal/ws"
 )
 
-func HandleFind(msg ws.WSMessage) map[string]interface{} {
+func FindCollection(msg ws.WSMessage) map[string]interface{} {
 	model := msg.Payload["model"].(string)
 	filter := toBson(msg.Payload["filter"])
 
@@ -17,5 +17,5 @@ func HandleFind(msg ws.WSMessage) map[string]interface{} {
 }
 
 func init() {
-	ws.AutoRegister(HandleFind)
+	ws.AutoRegister(FindCollection)
 }

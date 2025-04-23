@@ -5,7 +5,7 @@ import (
 	"atomic/internal/ws"
 )
 
-func HandleCreate(msg ws.WSMessage) map[string]interface{} {
+func CreateCollection(msg ws.WSMessage) map[string]interface{} {
 	model := msg.Payload["model"].(string)
 	data := msg.Payload["data"].(map[string]interface{})
 
@@ -17,5 +17,5 @@ func HandleCreate(msg ws.WSMessage) map[string]interface{} {
 }
 
 func init() {
-	ws.AutoRegister(HandleCreate)
+	ws.AutoRegister(CreateCollection)
 }

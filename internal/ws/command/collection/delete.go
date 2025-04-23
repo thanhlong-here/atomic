@@ -5,7 +5,7 @@ import (
 	"atomic/internal/ws"
 )
 
-func HandleDelete(msg ws.WSMessage) map[string]interface{} {
+func DeleteCollection(msg ws.WSMessage) map[string]interface{} {
 	model := msg.Payload["model"].(string)
 	filter := toBson(msg.Payload["filter"])
 
@@ -17,5 +17,5 @@ func HandleDelete(msg ws.WSMessage) map[string]interface{} {
 }
 
 func init() {
-	ws.AutoRegister(HandleDelete)
+	ws.AutoRegister(DeleteCollection)
 }

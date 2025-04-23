@@ -53,6 +53,15 @@ func getFunctionName(i interface{}) string {
 }
 
 func HandleWS(w http.ResponseWriter, r *http.Request) {
+
+	secret := r.Header.Get("X-App-Secret")
+
+	if secret != os.Getenv("APP_SECRET_KEY") {
+		http.Error(w, "Unauthorized WebSocket connection", http.StatusUnauthorized)
+		return
+	}
+
+	// ✅ Nếu hợp lệ → upgrade WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("WebSocket upgrade error:", err)
@@ -60,13 +69,14 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	log.Println("✅ WebSocket kết nối với key hợp lệ")
+
 	for {
 		var msg WSMessage
 		if err := conn.ReadJSON(&msg); err != nil {
 			log.Println("WebSocket read error:", err)
 			break
 		}
-
 		response := Dispatch(msg)
 		if err := conn.WriteJSON(response); err != nil {
 			log.Println("WebSocket write error:", err)

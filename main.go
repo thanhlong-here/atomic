@@ -3,7 +3,8 @@ package main
 import (
 	"atomic/internal/db"
 	"atomic/internal/ws"
-	_ "atomic/internal/ws/command" // auto-register các command trong init()
+	_ "atomic/internal/ws/command/collection"
+	_ "atomic/internal/ws/command/ai" 
 	"log"
 
 	"github.com/joho/godotenv"

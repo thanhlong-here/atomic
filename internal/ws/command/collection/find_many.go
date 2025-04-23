@@ -5,7 +5,7 @@ import (
 	"atomic/internal/ws"
 )
 
-func HandleFindMany(msg ws.WSMessage) map[string]interface{} {
+func FindManyCollection(msg ws.WSMessage) map[string]interface{} {
 	model, err := GetModel(msg.Payload)
 	if err != nil {
 		return errorResp(err)
@@ -22,5 +22,5 @@ func HandleFindMany(msg ws.WSMessage) map[string]interface{} {
 }
 
 func init() {
-	ws.AutoRegister(HandleFindMany)
+	ws.AutoRegister(FindManyCollection)
 }

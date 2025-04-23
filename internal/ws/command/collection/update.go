@@ -5,7 +5,7 @@ import (
 	"atomic/internal/ws"
 )
 
-func HandleUpdate(msg ws.WSMessage) map[string]interface{} {
+func UpdateCollection(msg ws.WSMessage) map[string]interface{} {
 	model := msg.Payload["model"].(string)
 	filter := toBson(msg.Payload["filter"])
 	update := msg.Payload["data"].(map[string]interface{})
@@ -18,5 +18,5 @@ func HandleUpdate(msg ws.WSMessage) map[string]interface{} {
 }
 
 func init() {
-	ws.AutoRegister(HandleUpdate)
+	ws.AutoRegister(UpdateCollection)
 }
